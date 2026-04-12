@@ -4,6 +4,7 @@
 import React, { useState, useMemo } from "react";
 import SearchBar from "@/components/SearchBar";
 import FarmacoCard from "@/components/FarmacoCard";
+import CalculadoraDosis from "@/components/CalculadoraDosis";
 import { Farmaco, CategoriaFarmaco } from "@/types/farmaco";
 import farmacos from "@/data/farmacos.json";
 import Link from "next/link";
@@ -78,18 +79,22 @@ export default function HomePage() {
           enfermería del Hospital Dr. Roberto del Río.
         </p>
 
-        {/* Stats rápidas */}
-        <div className="flex justify-center gap-6 sm:gap-10 pt-2">
-          {[
-            { n: farmacos.filter((f) => f.categoria === "antibacteriano").length, label: "Antibacterianos" },
-            { n: farmacos.filter((f) => f.categoria === "antifungico").length, label: "Antifúngicos" },
-            { n: farmacos.filter((f) => f.categoria === "antiviral").length, label: "Antivirales" },
-          ].map(({ n, label }) => (
-            <div key={label} className="text-center">
-              <div className="text-2xl font-extrabold text-blue-700 dark:text-blue-400">{n}</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 font-medium">{label}</div>
+        {/* Stats rápidas + calculadora */}
+        <div className="flex flex-wrap justify-center items-center gap-6 sm:gap-10 pt-2">
+          <div className="text-center">
+            <div className="text-2xl font-extrabold text-blue-700 dark:text-blue-400">
+              {farmacos.length}
             </div>
-          ))}
+            <div className="text-xs text-gray-500 dark:text-gray-400 font-medium">Fármacos</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-extrabold text-blue-700 dark:text-blue-400">
+              {new Set(farmacos.map((f) => f.categoria)).size}
+            </div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 font-medium">Categorías</div>
+          </div>
+          <div className="h-8 w-px bg-gray-200 dark:bg-gray-700 hidden sm:block" />
+          <CalculadoraDosis />
         </div>
       </section>
 
