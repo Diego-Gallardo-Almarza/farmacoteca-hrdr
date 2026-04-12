@@ -1,9 +1,10 @@
 // CalculadoraDosis.tsx
-// Calculadora clínica de dosis para internos de enfermería — con Bottom Sheet (vaul)
+// Calculadora clínica de dosis — Bottom Sheet (vaul) + Stepper inputs
 "use client";
 
 import React, { useState, useMemo, useCallback } from "react";
 import { Drawer } from "vaul";
+import { Minus, Plus } from "lucide-react";
 
 /* ─── tipos ──────────────────────────────────────────────────────────── */
 type Modo = "continua" | "bolo" | "goteo";
@@ -19,25 +20,133 @@ function fmt(v: number, dec = 2): string {
     return v.toFixed(dec);
 }
 
-/* ─── componente ─────────────────────────────────────────────────────── */
+/* ─── StepperInput ───────────────────────────────────────────────────── */
+function StepperInput({
+    label,
+    value,
+    onChange,
+    step,
+    min = 0,
+    unit,
+}: {
+    label: string;
+    value: string;
+    onChange: (v: string) => void;
+    step: number;
+    min?: number;
+    unit?: string;
+}) {
+    const [editing, setEditing] = useState(false);
+    const numVal = parseFloat(value) || 0;
+
+    // Redondear al múltiplo de step más cercano para evitar decimales sucios
+    const round = (v: number) =>
+        step < 1 ? Math.round(v * 100) / 100 : Math.round(v);
+
+    const decrement = () => {
+        const next = round(Math.max(min, numVal - step));
+        onChange(String(next));
+    };
+
+    const increment = () => {
+        const next = round(numVal + step);
+        onChange(String(next));
+    };
+
+    return (
+        <div className="flex flex-col items-center gap-2 py-3">
+            {/* Etiqueta */}
+            <p className="text-xs font-semibold text-zinc-400 uppercase tracking-widest text-center">
+                {label}
+            </p>
+
+            {/* Stepper row */}
+            <div className="flex items-center justify-between w-full gap-2">
+                {/* Botón − */}
+                <button
+                    type="button"
+                    onClick={decrement}
+                    aria-label={`Disminuir ${label}`}
+                    className="w-10 h-10 rounded-full border border-zinc-800 bg-transparent
+                               flex items-center justify-center
+                               text-zinc-400 hover:bg-zinc-800 hover:text-white
+                               active:scale-95 transition-all"
+                >
+                    <Minus className="w-4 h-4" />
+                </button>
+
+                {/* Valor central — clic para editar */}
+                <div className="flex-1 flex flex-col items-center min-w-0">
+                    {editing ? (
+                        <input
+                            autoFocus
+                            type="number"
+                            value={value}
+                            onChange={(e) => onChange(e.target.value)}
+                            onBlur={() => setEditing(false)}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === "Escape")
+                                    setEditing(false);
+                            }}
+                            className="w-24 text-center text-2xl font-bold bg-transparent
+                                       text-white outline-none border-b-2 border-indigo-500
+                                       pb-0.5 [appearance:textfield]
+                                       [&::-webkit-outer-spin-button]:appearance-none
+                                       [&::-webkit-inner-spin-button]:appearance-none"
+                        />
+                    ) : (
+                        <button
+                            type="button"
+                            onClick={() => setEditing(true)}
+                            aria-label={`Editar ${label} manualmente`}
+                            className="flex items-baseline gap-1.5 hover:opacity-70 transition-opacity"
+                        >
+                            <span className="text-3xl font-bold text-white tabular-nums leading-none">
+                                {value || "0"}
+                            </span>
+                            {unit && (
+                                <span className="text-sm font-normal text-zinc-500">{unit}</span>
+                            )}
+                        </button>
+                    )}
+                </div>
+
+                {/* Botón + */}
+                <button
+                    type="button"
+                    onClick={increment}
+                    aria-label={`Aumentar ${label}`}
+                    className="w-10 h-10 rounded-full border border-zinc-800 bg-transparent
+                               flex items-center justify-center
+                               text-zinc-400 hover:bg-zinc-800 hover:text-white
+                               active:scale-95 transition-all"
+                >
+                    <Plus className="w-4 h-4" />
+                </button>
+            </div>
+        </div>
+    );
+}
+
+/* ─── componente principal ───────────────────────────────────────────── */
 export default function CalculadoraDosis() {
     const [abierto, setAbierto] = useState(false);
     const [modo, setModo] = useState<Modo>("continua");
 
     // Inputs compartidos (infusión)
-    const [mgAmpolla, setMgAmpolla] = useState("");
-    const [mlDilucion, setMlDilucion] = useState("");
+    const [mgAmpolla, setMgAmpolla] = useState("0");
+    const [mlDilucion, setMlDilucion] = useState("0");
 
     // Modo continua — dosis absoluta en mcg/min
-    const [dosisMcgMin, setDosisMcgMin] = useState("");
+    const [dosisMcgMin, setDosisMcgMin] = useState("0");
 
     // Modo bolo — dosis absoluta en mg
-    const [dosisMgTotal, setDosisMgTotal] = useState("");
+    const [dosisMgTotal, setDosisMgTotal] = useState("0");
     const [tiempoMin, setTiempoMin] = useState("30");
 
     // Modo goteo
-    const [volGoteo, setVolGoteo] = useState("");
-    const [tiempoGoteo, setTiempoGoteo] = useState("");
+    const [volGoteo, setVolGoteo] = useState("0");
+    const [tiempoGoteo, setTiempoGoteo] = useState("0");
 
     /* ─── cálculos infusión ──────────────────────────────────────────── */
     const resultadosInfusion = useMemo(() => {
@@ -49,17 +158,15 @@ export default function CalculadoraDosis() {
         const concMcgMl = concMgMl * 1000;
 
         if (modo === "continua") {
-            const dosis = n(dosisMcgMin); // mcg/min absolutos
+            const dosis = n(dosisMcgMin);
             if (!dosis) return { concMcgMl, concMgMl, modo: "continua" as const };
 
-            // ml/hr = dosis(mcg/min) * 60 / concentración(mcg/ml)
             const mlHr = (dosis * 60) / concMcgMl;
-            // Dosis en mg/hr para confirmar
-            const mgHr = dosis * 60 / 1000;
+            const mgHr = (dosis * 60) / 1000;
 
             return { concMcgMl, concMgMl, mlHr, mgHr, modo: "continua" as const };
         } else {
-            const dosisTotal = n(dosisMgTotal); // mg totales
+            const dosisTotal = n(dosisMgTotal);
             const tMin = n(tiempoMin);
             if (!dosisTotal) return { concMcgMl, concMgMl, modo: "bolo" as const };
 
@@ -76,21 +183,21 @@ export default function CalculadoraDosis() {
         const tiempo = n(tiempoGoteo);
         if (!vol || !tiempo) return null;
 
-        const microgotas = (vol * 60) / tiempo;   // factor 60 gtt/ml
-        const macrogotas = (vol * 20) / tiempo;   // factor 20 gtt/ml
-        const mlHr = (vol / tiempo) * 60;
-
-        return { microgotas, macrogotas, mlHr };
+        return {
+            microgotas: (vol * 60) / tiempo,
+            macrogotas: (vol * 20) / tiempo,
+            mlHr: (vol / tiempo) * 60,
+        };
     }, [volGoteo, tiempoGoteo]);
 
     const limpiar = useCallback(() => {
-        setMgAmpolla("");
-        setMlDilucion("");
-        setDosisMcgMin("");
-        setDosisMgTotal("");
+        setMgAmpolla("0");
+        setMlDilucion("0");
+        setDosisMcgMin("0");
+        setDosisMgTotal("0");
         setTiempoMin("30");
-        setVolGoteo("");
-        setTiempoGoteo("");
+        setVolGoteo("0");
+        setTiempoGoteo("0");
     }, []);
 
     /* ─── render ─────────────────────────────────────────────────────── */
@@ -116,21 +223,19 @@ export default function CalculadoraDosis() {
 
             {/* ── Portal del Drawer ── */}
             <Drawer.Portal>
-                {/* Overlay */}
                 <Drawer.Overlay className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm" />
 
-                {/* Panel inferior */}
                 <Drawer.Content
                     className="bg-[#09090b] border-t border-zinc-800 rounded-t-[10px] fixed bottom-0 left-0 right-0 z-50 flex flex-col outline-none max-h-[96%]"
                     aria-labelledby="calc-titulo"
                 >
-                    {/* Handle de arrastre */}
-                    <div className="w-12 h-1.5 bg-zinc-700 rounded-full mx-auto mt-4 mb-6 shrink-0" />
+                    {/* Handle */}
+                    <div className="w-12 h-1.5 bg-zinc-700 rounded-full mx-auto mt-4 mb-2 shrink-0" />
 
                     {/* Contenido scrollable */}
                     <div className="overflow-y-auto overscroll-contain flex-1 px-4 pb-2">
 
-                        {/* ── Banner de advertencia ── */}
+                        {/* Banner advertencia */}
                         <div className="flex items-start gap-3 px-4 py-4 bg-red-600 text-white mt-2 rounded-2xl">
                             <svg className="w-5 h-5 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24"
                                 stroke="currentColor" strokeWidth={2.5}>
@@ -143,18 +248,17 @@ export default function CalculadoraDosis() {
                             </p>
                         </div>
 
-                        {/* ── Encabezado ── */}
+                        {/* Encabezado */}
                         <div className="flex items-center justify-between pt-4 pb-2">
                             <div>
-                                <Drawer.Title id="calc-titulo" className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                                <Drawer.Title id="calc-titulo" className="text-lg font-bold text-white">
                                     Calculadora Clínica
                                 </Drawer.Title>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">Farmacoteca HRDR</p>
+                                <p className="text-xs text-zinc-500">Farmacoteca HRDR</p>
                             </div>
                             <button
                                 onClick={() => setAbierto(false)}
-                                className="p-2 rounded-xl text-gray-400 hover:text-gray-700 dark:hover:text-gray-200
-                                           hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                                className="p-2 rounded-xl text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors"
                                 aria-label="Cerrar calculadora"
                             >
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -163,17 +267,17 @@ export default function CalculadoraDosis() {
                             </button>
                         </div>
 
-                        {/* ── Toggle de modo (3 pestañas) ── */}
-                        <div className="pb-3">
-                            <div className="flex rounded-xl border-2 border-gray-200 dark:border-gray-700 overflow-hidden text-sm font-semibold">
+                        {/* Toggle de modo */}
+                        <div className="pb-4">
+                            <div className="flex rounded-xl border border-zinc-800 overflow-hidden text-sm font-semibold">
                                 {(["continua", "bolo", "goteo"] as Modo[]).map((m) => (
                                     <button
                                         key={m}
                                         onClick={() => setModo(m)}
-                                        className={`flex-1 px-3 py-2 transition-colors capitalize ${
+                                        className={`flex-1 px-3 py-2 transition-colors ${
                                             modo === m
                                                 ? "bg-indigo-600 text-white"
-                                                : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                                : "bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-white"
                                         }`}
                                     >
                                         {m === "continua" ? "Continua" : m === "bolo" ? "Bolo" : "Goteo"}
@@ -182,261 +286,156 @@ export default function CalculadoraDosis() {
                             </div>
                         </div>
 
-                        {/* ── Formulario ── */}
-                        <div className="pb-8 space-y-4">
+                        {/* ═══ MODOS INFUSIÓN ═══ */}
+                        {(modo === "continua" || modo === "bolo") && (
+                            <div className="space-y-1 pb-8">
 
-                            {/* ══ MODOS INFUSIÓN (continua / bolo) ══ */}
-                            {(modo === "continua" || modo === "bolo") && (
-                                <>
-                                    {/* Preparación de la solución */}
-                                    <fieldset className="space-y-3">
-                                        <legend className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                                            Preparación de la solución
-                                        </legend>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <label className="block">
-                                                <span className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1 block">
-                                                    Fármaco en ampolla (mg)
-                                                </span>
-                                                <input
-                                                    type="number" min="0" step="any"
-                                                    value={mgAmpolla}
-                                                    onChange={(e) => setMgAmpolla(e.target.value)}
-                                                    placeholder="ej. 50"
-                                                    className="w-full px-3 py-2.5 rounded-xl border-2 border-gray-200 dark:border-gray-600
-                                                               bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm
-                                                               focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100
-                                                               dark:focus:ring-indigo-900/30 transition-all"
-                                                />
-                                            </label>
-                                            <label className="block">
-                                                <span className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1 block">
-                                                    Volumen a diluir (ml)
-                                                </span>
-                                                <input
-                                                    type="number" min="0" step="any"
-                                                    value={mlDilucion}
-                                                    onChange={(e) => setMlDilucion(e.target.value)}
-                                                    placeholder="ej. 50"
-                                                    className="w-full px-3 py-2.5 rounded-xl border-2 border-gray-200 dark:border-gray-600
-                                                               bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm
-                                                               focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100
-                                                               dark:focus:ring-indigo-900/30 transition-all"
-                                                />
-                                            </label>
+                                {/* Sección: Preparación */}
+                                <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-1">
+                                    Preparación de la solución
+                                </p>
+                                <div className="grid grid-cols-2 divide-x divide-zinc-800 rounded-2xl border border-zinc-800 overflow-hidden mb-4">
+                                    <StepperInput
+                                        label="Ampolla"
+                                        value={mgAmpolla}
+                                        onChange={setMgAmpolla}
+                                        step={1}
+                                        unit="mg"
+                                    />
+                                    <StepperInput
+                                        label="Dilución"
+                                        value={mlDilucion}
+                                        onChange={setMlDilucion}
+                                        step={10}
+                                        unit="ml"
+                                    />
+                                </div>
+
+                                {/* Sección: Prescripción */}
+                                <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-1">
+                                    Prescripción
+                                </p>
+                                {modo === "continua" ? (
+                                    <div className="rounded-2xl border border-zinc-800 overflow-hidden mb-4">
+                                        <StepperInput
+                                            label="Dosis indicada"
+                                            value={dosisMcgMin}
+                                            onChange={setDosisMcgMin}
+                                            step={1}
+                                            unit="mcg/min"
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-2 divide-x divide-zinc-800 rounded-2xl border border-zinc-800 overflow-hidden mb-4">
+                                        <StepperInput
+                                            label="Dosis total"
+                                            value={dosisMgTotal}
+                                            onChange={setDosisMgTotal}
+                                            step={1}
+                                            unit="mg"
+                                        />
+                                        <StepperInput
+                                            label="Pasar en"
+                                            value={tiempoMin}
+                                            onChange={setTiempoMin}
+                                            step={5}
+                                            min={1}
+                                            unit="min"
+                                        />
+                                    </div>
+                                )}
+
+                                {/* Resultados infusión */}
+                                <div className="rounded-xl overflow-hidden border border-zinc-800">
+                                    {resultadosInfusion && (
+                                        <div className="px-4 py-3 bg-indigo-950/60 border-b border-zinc-800">
+                                            <p className="text-xs font-bold text-indigo-400 uppercase tracking-wide mb-1">
+                                                Concentración de la solución
+                                            </p>
+                                            <p className="text-sm font-semibold text-indigo-200">
+                                                {fmt(resultadosInfusion.concMgMl, 3)} mg/ml
+                                                <span className="text-zinc-600 font-normal mx-2">·</span>
+                                                {fmt(resultadosInfusion.concMcgMl, 1)} mcg/ml
+                                            </p>
                                         </div>
-                                    </fieldset>
-
-                                    {/* Prescripción */}
-                                    <fieldset className="space-y-3">
-                                        <legend className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                                            Prescripción
-                                        </legend>
-
-                                        {modo === "continua" ? (
-                                            <label className="block">
-                                                <span className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1 block">
-                                                    Dosis indicada (mcg/min)
-                                                </span>
-                                                <input
-                                                    type="number" min="0" step="any"
-                                                    value={dosisMcgMin}
-                                                    onChange={(e) => setDosisMcgMin(e.target.value)}
-                                                    placeholder="ej. 200"
-                                                    className="w-full px-3 py-2.5 rounded-xl border-2 border-gray-200 dark:border-gray-600
-                                                               bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm
-                                                               focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100
-                                                               dark:focus:ring-indigo-900/30 transition-all"
-                                                />
-                                            </label>
-                                        ) : (
-                                            <div className="grid grid-cols-2 gap-3">
-                                                <label className="block">
-                                                    <span className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1 block">
-                                                        Dosis total (mg)
-                                                    </span>
-                                                    <input
-                                                        type="number" min="0" step="any"
-                                                        value={dosisMgTotal}
-                                                        onChange={(e) => setDosisMgTotal(e.target.value)}
-                                                        placeholder="ej. 5"
-                                                        className="w-full px-3 py-2.5 rounded-xl border-2 border-gray-200 dark:border-gray-600
-                                                                   bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm
-                                                                   focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100
-                                                                   dark:focus:ring-indigo-900/30 transition-all"
-                                                    />
-                                                </label>
-                                                <label className="block">
-                                                    <span className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1 block">
-                                                        Pasar en (min)
-                                                    </span>
-                                                    <input
-                                                        type="number" min="1" step="1"
-                                                        value={tiempoMin}
-                                                        onChange={(e) => setTiempoMin(e.target.value)}
-                                                        placeholder="ej. 30"
-                                                        className="w-full px-3 py-2.5 rounded-xl border-2 border-gray-200 dark:border-gray-600
-                                                                   bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm
-                                                                   focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100
-                                                                   dark:focus:ring-indigo-900/30 transition-all"
-                                                    />
-                                                </label>
-                                            </div>
+                                    )}
+                                    <div className="divide-y divide-zinc-800">
+                                        <ResultRow label="Velocidad de infusión" valor={resultadosInfusion?.mlHr} unidad="ml/hr" decimales={2} destacado />
+                                        {modo === "continua" && (
+                                            <ResultRow label="Dosis en mg/hr" valor={resultadosInfusion?.mgHr} unidad="mg/hr" decimales={3} />
                                         )}
-                                    </fieldset>
-
-                                    {/* Resultados infusión */}
-                                    <div className="rounded-xl overflow-hidden border-2 border-indigo-200 dark:border-indigo-800">
-                                        {resultadosInfusion && (
-                                            <div className="px-4 py-3 bg-indigo-50 dark:bg-indigo-900/30 border-b border-indigo-200 dark:border-indigo-800">
-                                                <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide mb-1">
-                                                    Concentración de la solución
-                                                </p>
-                                                <p className="text-sm font-semibold text-indigo-900 dark:text-indigo-200">
-                                                    {fmt(resultadosInfusion.concMgMl, 3)} mg/ml
-                                                    <span className="text-indigo-500 dark:text-indigo-400 font-normal mx-2">·</span>
-                                                    {fmt(resultadosInfusion.concMcgMl, 1)} mcg/ml
-                                                </p>
-                                            </div>
-                                        )}
-
-                                        <div className="divide-y divide-indigo-100 dark:divide-indigo-900">
-                                            <ResultRow
-                                                label="Velocidad de infusión"
-                                                valor={resultadosInfusion?.mlHr}
-                                                unidad="ml/hr"
-                                                decimales={2}
-                                                destacado
-                                            />
-                                            {modo === "continua" && (
-                                                <ResultRow
-                                                    label="Dosis en mg/hr"
-                                                    valor={resultadosInfusion?.mgHr}
-                                                    unidad="mg/hr"
-                                                    decimales={3}
-                                                />
-                                            )}
-                                            {modo === "bolo" && resultadosInfusion?.modo === "bolo" && (
-                                                <>
-                                                    <ResultRow
-                                                        label="Dosis total"
-                                                        valor={resultadosInfusion.dosisTotal}
-                                                        unidad="mg"
-                                                        decimales={3}
-                                                    />
-                                                    <ResultRow
-                                                        label="Volumen a administrar"
-                                                        valor={resultadosInfusion.volAdm}
-                                                        unidad="ml"
-                                                        decimales={2}
-                                                        destacado
-                                                    />
-                                                </>
-                                            )}
-                                        </div>
-
-                                        {!resultadosInfusion && (
-                                            <div className="px-4 py-6 text-center text-sm text-gray-400 dark:text-gray-500">
-                                                Ingresa los datos para ver los resultados
-                                            </div>
+                                        {modo === "bolo" && resultadosInfusion?.modo === "bolo" && (
+                                            <>
+                                                <ResultRow label="Dosis total" valor={resultadosInfusion.dosisTotal} unidad="mg" decimales={3} />
+                                                <ResultRow label="Volumen a administrar" valor={resultadosInfusion.volAdm} unidad="ml" decimales={2} destacado />
+                                            </>
                                         )}
                                     </div>
-                                </>
-                            )}
-
-                            {/* ══ MODO GOTEO ══ */}
-                            {modo === "goteo" && (
-                                <>
-                                    <fieldset className="space-y-3">
-                                        <legend className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                                            Datos de la sueroterapia
-                                        </legend>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <label className="block">
-                                                <span className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1 block">
-                                                    Volumen total (ml)
-                                                </span>
-                                                <input
-                                                    type="number" min="0" step="any"
-                                                    value={volGoteo}
-                                                    onChange={(e) => setVolGoteo(e.target.value)}
-                                                    placeholder="ej. 500"
-                                                    className="w-full px-3 py-2.5 rounded-xl border-2 border-gray-200 dark:border-gray-600
-                                                               bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm
-                                                               focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100
-                                                               dark:focus:ring-indigo-900/30 transition-all"
-                                                />
-                                            </label>
-                                            <label className="block">
-                                                <span className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1 block">
-                                                    Tiempo a pasar (min)
-                                                </span>
-                                                <input
-                                                    type="number" min="1" step="1"
-                                                    value={tiempoGoteo}
-                                                    onChange={(e) => setTiempoGoteo(e.target.value)}
-                                                    placeholder="ej. 240"
-                                                    className="w-full px-3 py-2.5 rounded-xl border-2 border-gray-200 dark:border-gray-600
-                                                               bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm
-                                                               focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100
-                                                               dark:focus:ring-indigo-900/30 transition-all"
-                                                />
-                                            </label>
+                                    {!resultadosInfusion && (
+                                        <div className="px-4 py-6 text-center text-sm text-zinc-600">
+                                            Ingresa los datos para ver los resultados
                                         </div>
-                                    </fieldset>
+                                    )}
+                                </div>
+                            </div>
+                        )}
 
-                                    {/* Referencia de factores */}
-                                    <div className="flex gap-2 text-xs text-gray-500 dark:text-gray-400">
-                                        <span className="px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-gray-800 font-mono">
-                                            Micro: 60 gtt/ml
-                                        </span>
-                                        <span className="px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-gray-800 font-mono">
-                                            Macro: 20 gtt/ml
-                                        </span>
+                        {/* ═══ MODO GOTEO ═══ */}
+                        {modo === "goteo" && (
+                            <div className="space-y-4 pb-8">
+                                <div className="grid grid-cols-2 divide-x divide-zinc-800 rounded-2xl border border-zinc-800 overflow-hidden">
+                                    <StepperInput
+                                        label="Volumen"
+                                        value={volGoteo}
+                                        onChange={setVolGoteo}
+                                        step={50}
+                                        unit="ml"
+                                    />
+                                    <StepperInput
+                                        label="Tiempo"
+                                        value={tiempoGoteo}
+                                        onChange={setTiempoGoteo}
+                                        step={5}
+                                        min={1}
+                                        unit="min"
+                                    />
+                                </div>
+
+                                {/* Referencia factores */}
+                                <div className="flex gap-2 text-xs text-zinc-500">
+                                    <span className="px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 font-mono">
+                                        Micro: 60 gtt/ml
+                                    </span>
+                                    <span className="px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-800 font-mono">
+                                        Macro: 20 gtt/ml
+                                    </span>
+                                </div>
+
+                                {/* Resultados goteo */}
+                                <div className="rounded-xl overflow-hidden border border-zinc-800">
+                                    <div className="divide-y divide-zinc-800">
+                                        <GoteoRow label="Microgotas" valor={resultadosGoteo?.microgotas} unidad="microgotas/min" />
+                                        <GoteoRow label="Macrogotas" valor={resultadosGoteo?.macrogotas} unidad="gotas/min" />
+                                        <GoteoRow label="Velocidad bomba" valor={resultadosGoteo?.mlHr} unidad="ml/hr" destacado />
                                     </div>
-
-                                    {/* Resultados goteo */}
-                                    <div className="rounded-xl overflow-hidden border-2 border-teal-200 dark:border-teal-800">
-                                        <div className="divide-y divide-teal-100 dark:divide-teal-900">
-                                            <GoteoRow
-                                                label="Microgotas"
-                                                valor={resultadosGoteo?.microgotas}
-                                                unidad="microgotas/min"
-                                                destacado
-                                            />
-                                            <GoteoRow
-                                                label="Macrogotas"
-                                                valor={resultadosGoteo?.macrogotas}
-                                                unidad="gotas/min"
-                                                destacado
-                                            />
-                                            <GoteoRow
-                                                label="Velocidad bomba"
-                                                valor={resultadosGoteo?.mlHr}
-                                                unidad="ml/hr"
-                                                destacado
-                                            />
+                                    {!resultadosGoteo && (
+                                        <div className="px-4 py-6 text-center text-sm text-zinc-600">
+                                            Ingresa el volumen y el tiempo para ver los resultados
                                         </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
 
-                                        {!resultadosGoteo && (
-                                            <div className="px-4 py-6 text-center text-sm text-gray-400 dark:text-gray-500">
-                                                Ingresa el volumen y el tiempo para ver los resultados
-                                            </div>
-                                        )}
-                                    </div>
-                                </>
-                            )}
-
-                            {/* Botón limpiar */}
-                            <button
-                                onClick={limpiar}
-                                className="w-full py-2 rounded-xl border-2 border-gray-200 dark:border-gray-700
-                                           text-gray-500 dark:text-gray-400 text-sm font-semibold
-                                           hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-300 transition-all"
-                            >
-                                Limpiar campos
-                            </button>
-                        </div>
+                        {/* Botón limpiar */}
+                        <button
+                            onClick={limpiar}
+                            className="w-full py-2.5 mb-6 rounded-xl border border-zinc-800
+                                       text-zinc-500 text-sm font-semibold
+                                       hover:bg-zinc-900 hover:text-zinc-300 transition-all"
+                        >
+                            Limpiar campos
+                        </button>
                     </div>
                 </Drawer.Content>
             </Drawer.Portal>
@@ -444,7 +443,7 @@ export default function CalculadoraDosis() {
     );
 }
 
-/* ─── fila de resultado (infusión) ───────────────────────────────────── */
+/* ─── fila resultado infusión ────────────────────────────────────────── */
 function ResultRow({
     label,
     valor,
@@ -462,25 +461,23 @@ function ResultRow({
     const tieneValor = texto !== "—";
 
     return (
-        <div className={`flex items-center justify-between px-4 py-3
-            ${destacado ? "bg-white dark:bg-gray-900" : "bg-indigo-50/40 dark:bg-indigo-900/10"}`}>
-            <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">{label}</span>
-            <span className={`text-sm font-bold tabular-nums
-                ${tieneValor
-                    ? destacado
-                        ? "text-indigo-700 dark:text-indigo-300 text-base"
-                        : "text-gray-800 dark:text-gray-200"
-                    : "text-gray-300 dark:text-gray-600"}`}>
+        <div className={`flex items-center justify-between px-4 py-3 ${destacado ? "bg-zinc-900/60" : ""}`}>
+            <span className="text-sm text-zinc-400 font-medium">{label}</span>
+            <span className={`font-bold tabular-nums ${
+                tieneValor
+                    ? destacado ? "text-indigo-300 text-base" : "text-zinc-200 text-sm"
+                    : "text-zinc-700 text-sm"
+            }`}>
                 {texto}
                 {tieneValor && (
-                    <span className="text-xs font-normal text-gray-400 dark:text-gray-500 ml-1">{unidad}</span>
+                    <span className="text-xs font-normal text-zinc-600 ml-1">{unidad}</span>
                 )}
             </span>
         </div>
     );
 }
 
-/* ─── fila de resultado (goteo) ──────────────────────────────────────── */
+/* ─── fila resultado goteo ───────────────────────────────────────────── */
 function GoteoRow({
     label,
     valor,
@@ -496,16 +493,14 @@ function GoteoRow({
     const tieneValor = texto !== "—";
 
     return (
-        <div className={`flex items-center justify-between px-4 py-3
-            ${destacado ? "bg-white dark:bg-gray-900" : "bg-teal-50/40 dark:bg-teal-900/10"}`}>
-            <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">{label}</span>
-            <span className={`text-sm font-bold tabular-nums
-                ${tieneValor
-                    ? "text-teal-700 dark:text-teal-300 text-base"
-                    : "text-gray-300 dark:text-gray-600"}`}>
+        <div className={`flex items-center justify-between px-4 py-3 ${destacado ? "bg-zinc-900/60" : ""}`}>
+            <span className="text-sm text-zinc-400 font-medium">{label}</span>
+            <span className={`font-bold tabular-nums ${
+                tieneValor ? "text-teal-300 text-base" : "text-zinc-700 text-sm"
+            }`}>
                 {texto}
                 {tieneValor && (
-                    <span className="text-xs font-normal text-gray-400 dark:text-gray-500 ml-1">{unidad}</span>
+                    <span className="text-xs font-normal text-zinc-600 ml-1">{unidad}</span>
                 )}
             </span>
         </div>
