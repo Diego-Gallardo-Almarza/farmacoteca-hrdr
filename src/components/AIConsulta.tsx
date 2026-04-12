@@ -80,10 +80,12 @@ export default function AIConsulta() {
     };
 
     const sugerencias = [
-        "¿Cuál es la dosis de vancomicina?",
-        "¿Qué fármacos debo proteger de la luz?",
-        "¿Cuánto tiempo es estable el meropenem?",
-        "Lista los antifúngicos disponibles",
+        "¿Cuál es la dosis del Ketorolaco?",
+        "¿Qué precauciones tiene el Fentanilo?",
+        "¿Cómo actúa la Morfina?",
+        "Lista los analgésicos opioides",
+        "Interacciones del Metamizol",
+        "¿Qué fármacos producen depresión respiratoria?",
     ];
 
     return (
