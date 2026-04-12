@@ -1,8 +1,9 @@
 // CalculadoraDosis.tsx
-// Calculadora clínica de dosis para internos de enfermería
+// Calculadora clínica de dosis para internos de enfermería — con Bottom Sheet (vaul)
 "use client";
 
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, { useState, useMemo, useCallback } from "react";
+import { Drawer } from "vaul";
 
 /* ─── tipos ──────────────────────────────────────────────────────────── */
 type Modo = "continua" | "bolo";
@@ -35,14 +36,6 @@ export default function CalculadoraDosis() {
     const [dosisMgKg, setDosisMgKg] = useState("");
     const [tiempoMin, setTiempoMin] = useState("30");
 
-    // Cerrar con Escape
-    useEffect(() => {
-        if (!abierto) return;
-        const fn = (e: KeyboardEvent) => { if (e.key === "Escape") setAbierto(false); };
-        window.addEventListener("keydown", fn);
-        return () => window.removeEventListener("keydown", fn);
-    }, [abierto]);
-
     /* ─── cálculos ───────────────────────────────────────────────────── */
     const resultados = useMemo(() => {
         const mg = n(mgAmpolla);
@@ -51,30 +44,25 @@ export default function CalculadoraDosis() {
 
         if (!mg || !ml) return null;
 
-        // Concentración de la solución preparada
-        const concMgMl = mg / ml;           // mg/ml
-        const concMcgMl = concMgMl * 1000;  // mcg/ml
+        const concMgMl = mg / ml;
+        const concMcgMl = concMgMl * 1000;
 
         if (modo === "continua") {
-            const dosis = n(dosisMcgKgMin); // mcg/kg/min
+            const dosis = n(dosisMcgKgMin);
             if (!dosis || !kg) return { concMcgMl, concMgMl, modo: "continua" as const };
 
-            // ml/hr = dosis(mcg/kg/min) × peso(kg) × 60(min) / concentración(mcg/ml)
             const mlHr = (dosis * kg * 60) / concMcgMl;
-            // Dosis verificada (redundante pero útil para confirmar)
             const dosisVerif = (mlHr * concMcgMl) / (kg * 60);
 
             return { concMcgMl, concMgMl, mlHr, dosisVerif, modo: "continua" as const };
         } else {
-            const dMgKg = n(dosisMgKg);   // mg/kg
-            const tMin = n(tiempoMin);    // minutos
+            const dMgKg = n(dosisMgKg);
+            const tMin = n(tiempoMin);
             if (!dMgKg || !kg) return { concMcgMl, concMgMl, modo: "bolo" as const };
 
-            const dosisTotal = dMgKg * kg;          // mg totales
-            const volAdm = dosisTotal / concMgMl;   // ml a administrar
-            // Velocidad si se pasa en tiempo especificado
+            const dosisTotal = dMgKg * kg;
+            const volAdm = dosisTotal / concMgMl;
             const mlHr = tMin > 0 ? (volAdm / tMin) * 60 : 0;
-            // Dosis en mcg/kg/min durante la infusión del bolo
             const dosisVerif = tMin > 0 ? (dosisTotal * 1000) / (kg * tMin) : 0;
 
             return { concMcgMl, concMgMl, volAdm, dosisTotal, mlHr, dosisVerif, modo: "bolo" as const };
@@ -92,45 +80,48 @@ export default function CalculadoraDosis() {
 
     /* ─── render ─────────────────────────────────────────────────────── */
     return (
-        <>
+        <Drawer.Root open={abierto} onOpenChange={setAbierto}>
             {/* ── Botón disparador ── */}
-            <button
-                onClick={() => setAbierto(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
-                           bg-white dark:bg-gray-800 border-2 border-indigo-200 dark:border-indigo-700
-                           text-indigo-700 dark:text-indigo-400 text-sm font-semibold
-                           hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:border-indigo-400
-                           transition-all shadow-sm"
-                aria-label="Abrir calculadora de dosis"
-            >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round"
-                        d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 11h.01M12 11h.01M15 11h.01M4 5a2 2 0 012-2h12a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V5z" />
-                </svg>
-                Calculadora de dosis
-            </button>
+            <Drawer.Trigger asChild>
+                <button
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl
+                               bg-white dark:bg-gray-800 border-2 border-indigo-200 dark:border-indigo-700
+                               text-indigo-700 dark:text-indigo-400 text-sm font-semibold
+                               hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:border-indigo-400
+                               transition-all shadow-sm"
+                    aria-label="Abrir calculadora de dosis"
+                >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round"
+                            d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 11h.01M12 11h.01M15 11h.01M4 5a2 2 0 012-2h12a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V5z" />
+                    </svg>
+                    Calculadora de dosis
+                </button>
+            </Drawer.Trigger>
 
-            {/* ── Modal ── */}
-            {abierto && (
-                <div
-                    className="fixed inset-0 z-50 flex items-center justify-center p-4"
-                    role="dialog"
-                    aria-modal="true"
+            {/* ── Portal del Drawer ── */}
+            <Drawer.Portal>
+                {/* Overlay */}
+                <Drawer.Overlay className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" />
+
+                {/* Panel inferior */}
+                <Drawer.Content
+                    className="fixed bottom-0 left-0 right-0 z-50 flex flex-col
+                               bg-white dark:bg-gray-900
+                               rounded-t-3xl border-t-2 border-gray-200 dark:border-gray-700
+                               shadow-2xl max-h-[92dvh] focus:outline-none"
                     aria-labelledby="calc-titulo"
                 >
-                    {/* Overlay */}
-                    <div
-                        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-                        onClick={() => setAbierto(false)}
-                    />
+                    {/* Handle de arrastre */}
+                    <div className="flex justify-center pt-3 pb-1 shrink-0">
+                        <div className="w-10 h-1.5 rounded-full bg-gray-300 dark:bg-gray-600" />
+                    </div>
 
-                    {/* Panel */}
-                    <div className="relative z-10 w-full max-w-lg bg-white dark:bg-gray-900 rounded-2xl shadow-2xl
-                                    border-2 border-gray-200 dark:border-gray-700 overflow-hidden
-                                    max-h-[95vh] overflow-y-auto">
+                    {/* Contenido scrollable */}
+                    <div className="overflow-y-auto overscroll-contain flex-1">
 
                         {/* ── Banner de advertencia ── */}
-                        <div className="flex items-start gap-3 px-5 py-4 bg-red-600 text-white">
+                        <div className="flex items-start gap-3 px-5 py-4 bg-red-600 text-white mx-4 mt-2 rounded-2xl">
                             <svg className="w-5 h-5 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24"
                                 stroke="currentColor" strokeWidth={2.5}>
                                 <path strokeLinecap="round" strokeLinejoin="round"
@@ -145,10 +136,10 @@ export default function CalculadoraDosis() {
                         {/* ── Encabezado ── */}
                         <div className="flex items-center justify-between px-5 pt-4 pb-2">
                             <div>
-                                <h2 id="calc-titulo" className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                                <Drawer.Title id="calc-titulo" className="text-lg font-bold text-gray-900 dark:text-gray-100">
                                     Calculadora de Dosis
-                                </h2>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">Farmacoteca HCSBA</p>
+                                </Drawer.Title>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">Farmacoteca HRDR</p>
                             </div>
                             <button
                                 onClick={() => setAbierto(false)}
@@ -187,7 +178,7 @@ export default function CalculadoraDosis() {
                         </div>
 
                         {/* ── Formulario ── */}
-                        <div className="px-5 pb-4 space-y-4">
+                        <div className="px-5 pb-8 space-y-4">
 
                             {/* Preparación de la solución */}
                             <fieldset className="space-y-3">
@@ -316,7 +307,6 @@ export default function CalculadoraDosis() {
 
                             {/* ── Resultados ── */}
                             <div className="rounded-xl overflow-hidden border-2 border-indigo-200 dark:border-indigo-800">
-                                {/* Concentración (siempre visible si hay datos) */}
                                 {resultados && (
                                     <div className="px-4 py-3 bg-indigo-50 dark:bg-indigo-900/30 border-b border-indigo-200 dark:border-indigo-800">
                                         <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide mb-1">
@@ -331,7 +321,6 @@ export default function CalculadoraDosis() {
                                 )}
 
                                 <div className="divide-y divide-indigo-100 dark:divide-indigo-900">
-                                    {/* Velocidad de infusión */}
                                     <ResultRow
                                         label="Velocidad de infusión"
                                         valor={resultados?.mlHr}
@@ -339,8 +328,6 @@ export default function CalculadoraDosis() {
                                         decimales={2}
                                         destacado
                                     />
-
-                                    {/* Dosis en mcg/kg/min */}
                                     <ResultRow
                                         label="Dosis en mcg/kg/min"
                                         valor={resultados?.dosisVerif}
@@ -348,8 +335,6 @@ export default function CalculadoraDosis() {
                                         decimales={3}
                                         destacado
                                     />
-
-                                    {/* Bolo: volumen extra */}
                                     {modo === "bolo" && resultados?.modo === "bolo" && (
                                         <>
                                             <ResultRow
@@ -369,7 +354,6 @@ export default function CalculadoraDosis() {
                                     )}
                                 </div>
 
-                                {/* Estado vacío */}
                                 {!resultados && (
                                     <div className="px-4 py-6 text-center text-sm text-gray-400 dark:text-gray-500">
                                         Ingresa los datos para ver los resultados
@@ -388,9 +372,9 @@ export default function CalculadoraDosis() {
                             </button>
                         </div>
                     </div>
-                </div>
-            )}
-        </>
+                </Drawer.Content>
+            </Drawer.Portal>
+        </Drawer.Root>
     );
 }
 

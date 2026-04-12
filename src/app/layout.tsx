@@ -3,7 +3,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 import DarkModeToggle from "@/components/DarkModeToggle";
 import AIConsulta from "@/components/AIConsulta";
+import FavoritosPopover from "@/components/FavoritosPopover";
 import Link from "next/link";
+import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
   title: "Farmacoteca HCSBA — Fármacos para Enfermería",
@@ -91,6 +93,7 @@ export default function RootLayout({
                 </svg>
                 Lista completa
               </Link>
+              <FavoritosPopover />
               <DarkModeToggle />
             </nav>
           </div>
@@ -136,6 +139,9 @@ export default function RootLayout({
 
         {/* ===== ASISTENTE IA FLOTANTE ===== */}
         <AIConsulta />
+
+        {/* ===== SISTEMA DE NOTIFICACIONES ===== */}
+        <Toaster theme="dark" position="bottom-center" richColors />
       </body>
     </html>
   );
