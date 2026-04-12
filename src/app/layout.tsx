@@ -6,19 +6,25 @@ import AIConsulta from "@/components/AIConsulta";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Farmacoteca HRDR — Antimicrobianos Pediátricos",
+  title: "Farmacoteca HCSBA — Fármacos para Enfermería",
   description:
-    "Farmacoteca digital de antimicrobianos, antivirales y antifúngicos de uso exclusivo pediátrico (< 15 años) para estudiantes de enfermería del Hospital Dr. Roberto del Río.",
+    "Farmacoteca digital de fármacos para internos de enfermería del Hospital Clínico San Borja Arriarán.",
   keywords: [
     "farmacoteca",
-    "pediátrica",
-    "antimicrobianos",
-    "pediatría",
-    "Hospital Roberto del Río",
     "enfermería",
-    "antibióticos pediátricos",
+    "fármacos",
+    "internos",
+    "Hospital San Borja Arriarán",
+    "calculadora dosis",
   ],
   authors: [{ name: "EU Loreto Lizana Varela" }, { name: "QF Angélica Valenzuela" }],
+  manifest: "/manifest.json",
+  themeColor: "#ffffff",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Farmacoteca",
+  },
 };
 
 export default function RootLayout({
