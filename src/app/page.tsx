@@ -65,11 +65,6 @@ export default function HomePage() {
           <div className="absolute -top-10 -right-10 w-60 h-60 rounded-full bg-green-100 dark:bg-green-900/20 blur-3xl opacity-50" />
         </div>
 
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-sm font-semibold border border-blue-200 dark:border-blue-700">
-          <span>👶</span>
-          <span>Uso Pediátrico Exclusivo · &lt; 15 años</span>
-        </div>
-
         <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-gray-100 leading-tight">
           <span className="gradient-text">Farmacoteca</span>{" "}
           <span className="text-blue-800 dark:text-blue-300">Yiyo</span>

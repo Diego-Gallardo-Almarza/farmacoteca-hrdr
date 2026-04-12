@@ -99,18 +99,6 @@ export default function RootLayout({
           </div>
         </header>
 
-        {/* ===== BANNER DE ADVERTENCIA ===== */}
-        <div className="sticky top-16 z-20 bg-blue-700 dark:bg-blue-900/80 border-b border-blue-600 dark:border-blue-700 backdrop-blur-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2 flex items-center gap-2">
-            <span className="text-blue-200 shrink-0">⚠️</span>
-            <p className="text-xs sm:text-sm text-blue-50 font-medium text-center w-full">
-              Esta farmacoteca es de uso{" "}
-              <strong>exclusivo pediátrico (pacientes &lt; 15 años)</strong>.
-              Las dosis descritas no aplican para población adulta.
-            </p>
-          </div>
-        </div>
-
         {/* ===== CONTENIDO PRINCIPAL ===== */}
         <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 pb-28">
           {children}
@@ -130,9 +118,6 @@ export default function RootLayout({
             <p className="text-xs text-gray-400 dark:text-gray-600">
               Revisado por{" "}
               <span className="font-medium">Dra. Verónica Contardo Pérez</span>
-            </p>
-            <p className="text-xs text-blue-400 dark:text-blue-600 mt-2">
-              👶 Uso exclusivo pediátrico · Pacientes &lt; 15 años
             </p>
           </div>
         </footer>
