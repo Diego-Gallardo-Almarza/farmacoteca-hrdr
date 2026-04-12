@@ -14,15 +14,32 @@ interface FarmacoTableProps {
 type SortField = "nombre" | "categoria";
 type SortDir = "asc" | "desc";
 
-const categoriaColors = {
+const categoriaColors: Record<string, string> = {
     antibacteriano: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
     antifungico: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
     antiviral: "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300",
+    aine_analgesico: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300",
+    opioide: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
+    digestivo: "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300",
+    vitamina: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+    mineral: "bg-slate-100 text-slate-700 dark:bg-slate-900/40 dark:text-slate-300",
+    corticoide: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300",
+    oncologico: "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300",
+    "psicofármaco": "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300",
 };
-const categoriaLabels = {
+
+const categoriaLabels: Record<string, string> = {
     antibacteriano: "Antibacteriano",
     antifungico: "Antifúngico",
     antiviral: "Antiviral",
+    aine_analgesico: "AINE / Analgésico",
+    opioide: "Opioide",
+    digestivo: "Digestivo",
+    vitamina: "Vitamina",
+    mineral: "Mineral",
+    corticoide: "Corticoide",
+    oncologico: "Oncológico",
+    "psicofármaco": "Psicofármaco",
 };
 
 export default function FarmacoTable({ farmacos }: FarmacoTableProps) {
@@ -30,6 +47,12 @@ export default function FarmacoTable({ farmacos }: FarmacoTableProps) {
     const [sortField, setSortField] = useState<SortField>("nombre");
     const [sortDir, setSortDir] = useState<SortDir>("asc");
     const [filtroCategoria, setFiltroCategoria] = useState<CategoriaFarmaco | "todos">("todos");
+
+    // Categorías presentes en los datos actuales
+    const categoriasDisponibles = useMemo(() => {
+        const set = new Set(farmacos.map((f) => f.categoria));
+        return ["todos" as const, ...Array.from(set).sort()];
+    }, [farmacos]);
 
     const handleSort = (field: SortField) => {
         if (sortField === field) {
@@ -44,7 +67,14 @@ export default function FarmacoTable({ farmacos }: FarmacoTableProps) {
         const q = search.toLowerCase().trim();
         return farmacos
             .filter((f) => {
-                const matchTexto = !q || f.nombre.toLowerCase().includes(q) || f.cuidados.toLowerCase().includes(q);
+                const searchable = [
+                    f.nombre,
+                    f.cuidados,
+                    f.mecanismoAccion ?? "",
+                    f.reaccionesAdversas ?? "",
+                    f.interacciones ?? "",
+                ].join(" ").toLowerCase();
+                const matchTexto = !q || searchable.includes(q);
                 const matchCategoria = filtroCategoria === "todos" || f.categoria === filtroCategoria;
                 return matchTexto && matchCategoria;
             })
@@ -91,16 +121,16 @@ export default function FarmacoTable({ farmacos }: FarmacoTableProps) {
                     />
                 </div>
                 <div className="flex gap-2 flex-wrap">
-                    {(["todos", "antibacteriano", "antifungico", "antiviral"] as const).map((cat) => (
+                    {categoriasDisponibles.map((cat) => (
                         <button
                             key={cat}
-                            onClick={() => setFiltroCategoria(cat)}
+                            onClick={() => setFiltroCategoria(cat as CategoriaFarmaco | "todos")}
                             className={`px-3 py-2 rounded-xl text-xs font-semibold border-2 transition-all ${filtroCategoria === cat
                                     ? "bg-blue-700 border-blue-700 text-white"
                                     : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-blue-400"
                                 }`}
                         >
-                            {cat === "todos" ? "Todos" : cat === "antifungico" ? "Antifúngico" : cat.charAt(0).toUpperCase() + cat.slice(1)}
+                            {cat === "todos" ? "Todos" : (categoriaLabels[cat] ?? cat)}
                         </button>
                     ))}
                 </div>
@@ -128,16 +158,15 @@ export default function FarmacoTable({ farmacos }: FarmacoTableProps) {
                                         Categoría <SortIcon field="categoria" />
                                     </button>
                                 </th>
-                                <th className="text-left px-4 py-3 font-semibold hidden md:table-cell">Dosis</th>
-                                <th className="text-left px-4 py-3 font-semibold hidden lg:table-cell">Frecuencia</th>
-                                <th className="text-left px-4 py-3 font-semibold hidden xl:table-cell">Velocidad</th>
+                                <th className="text-left px-4 py-3 font-semibold hidden md:table-cell">Cuidados / Dilución</th>
+                                <th className="text-left px-4 py-3 font-semibold hidden lg:table-cell">Mecanismo</th>
                                 <th className="text-left px-4 py-3 font-semibold hidden sm:table-cell">Alertas</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                             {farmacosFiltrados.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="text-center py-10 text-gray-400 dark:text-gray-500">
+                                    <td colSpan={5} className="text-center py-10 text-gray-400 dark:text-gray-500">
                                         <div className="flex flex-col items-center gap-2">
                                             <span className="text-3xl">🔍</span>
                                             <p>No se encontraron fármacos con ese criterio</p>
@@ -160,18 +189,21 @@ export default function FarmacoTable({ farmacos }: FarmacoTableProps) {
                                             </Link>
                                         </td>
                                         <td className="px-4 py-3">
-                                            <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${categoriaColors[f.categoria]}`}>
-                                                {categoriaLabels[f.categoria]}
+                                            <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${categoriaColors[f.categoria] ?? "bg-gray-100 text-gray-700"}`}>
+                                                {categoriaLabels[f.categoria] ?? f.categoria}
                                             </span>
                                         </td>
-                                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400 hidden md:table-cell max-w-[200px] truncate">
-                                            {f.dosis}
+                                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400 hidden md:table-cell max-w-[220px]">
+                                            <span className="line-clamp-2 text-xs leading-relaxed">
+                                                {f.cuidados && f.cuidados !== "---"
+                                                    ? f.cuidados
+                                                    : (f.dilucion && f.dilucion !== "---" ? f.dilucion : "—")}
+                                            </span>
                                         </td>
-                                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400 hidden lg:table-cell">
-                                            {f.frecuencia}
-                                        </td>
-                                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400 hidden xl:table-cell">
-                                            {f.velocidad}
+                                        <td className="px-4 py-3 text-gray-600 dark:text-gray-400 hidden lg:table-cell max-w-[260px]">
+                                            <span className="line-clamp-2 text-xs leading-relaxed">
+                                                {f.mecanismoAccion ? f.mecanismoAccion : "—"}
+                                            </span>
                                         </td>
                                         <td className="px-4 py-3 hidden sm:table-cell">
                                             <div className="flex flex-wrap gap-1">
@@ -195,7 +227,7 @@ export default function FarmacoTable({ farmacos }: FarmacoTableProps) {
                     </table>
                 </div>
                 <div className="px-4 py-2 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400">
-                    Mostrando {farmacosFiltrados.length} de {farmacos.length} fármacos · Uso exclusivo pediátrico (&lt; 15 años)
+                    Mostrando {farmacosFiltrados.length} de {farmacos.length} fármacos · Farmacoteca HCSBA
                 </div>
             </div>
         </div>

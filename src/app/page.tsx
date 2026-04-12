@@ -37,7 +37,9 @@ function buscarFarmacos(
       farmaco.presentacion.some((p) =>
         normalizarTexto(p).includes(q)
       ) ||
-      normalizarTexto(farmaco.dosis).includes(q);
+      normalizarTexto(farmaco.dosis ?? "").includes(q) ||
+      normalizarTexto(farmaco.mecanismoAccion ?? "").includes(q) ||
+      normalizarTexto(farmaco.reaccionesAdversas ?? "").includes(q);
 
     return matchCategoria && matchTexto;
   });

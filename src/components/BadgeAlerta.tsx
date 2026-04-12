@@ -144,6 +144,48 @@ const alertaConfig: Record<
         darkBg: "dark:bg-yellow-900/40 dark:border-yellow-700",
         darkColor: "dark:text-yellow-300",
     },
+    fotosensible: {
+        label: "☀️ Fotosensible",
+        color: "text-yellow-700",
+        bg: "bg-yellow-100 border-yellow-300",
+        darkBg: "dark:bg-yellow-900/40 dark:border-yellow-700",
+        darkColor: "dark:text-yellow-300",
+    },
+    hepatotoxicidad: {
+        label: "🫀 Hepatotoxicidad",
+        color: "text-orange-700",
+        bg: "bg-orange-100 border-orange-300",
+        darkBg: "dark:bg-orange-900/40 dark:border-orange-700",
+        darkColor: "dark:text-orange-300",
+    },
+    agranulocitosis: {
+        label: "🩸 Riesgo Agranulocitosis",
+        color: "text-red-700",
+        bg: "bg-red-100 border-red-300",
+        darkBg: "dark:bg-red-900/40 dark:border-red-700",
+        darkColor: "dark:text-red-300",
+    },
+    depresion_respiratoria: {
+        label: "🫁 Depresión Respiratoria",
+        color: "text-red-700",
+        bg: "bg-red-100 border-red-300",
+        darkBg: "dark:bg-red-900/40 dark:border-red-700",
+        darkColor: "dark:text-red-300",
+    },
+    naloxona_cerca: {
+        label: "💉 Naloxona Disponible",
+        color: "text-red-700",
+        bg: "bg-red-100 border-red-300",
+        darkBg: "dark:bg-red-900/40 dark:border-red-700",
+        darkColor: "dark:text-red-300",
+    },
+    extrapiramidal: {
+        label: "⚡ Riesgo Extrapiramidal",
+        color: "text-orange-700",
+        bg: "bg-orange-100 border-orange-300",
+        darkBg: "dark:bg-orange-900/40 dark:border-orange-700",
+        darkColor: "dark:text-orange-300",
+    },
 };
 
 export default function BadgeAlerta({ alerta }: BadgeAlertaProps) {

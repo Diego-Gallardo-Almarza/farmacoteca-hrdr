@@ -27,7 +27,14 @@ function resaltarTexto(texto: string, query: string): React.ReactNode {
     );
 }
 
-const categoriaConfig = {
+const categoriaConfig: Record<string, {
+    label: string;
+    bg: string;
+    text: string;
+    border: string;
+    badgeBg: string;
+    dot: string;
+}> = {
     antibacteriano: {
         label: "Antibacteriano",
         bg: "bg-blue-100 dark:bg-blue-900/40",
@@ -52,45 +59,125 @@ const categoriaConfig = {
         badgeBg: "bg-violet-700",
         dot: "bg-violet-500",
     },
+    aine_analgesico: {
+        label: "AINE / Analgésico",
+        bg: "bg-orange-100 dark:bg-orange-900/40",
+        text: "text-orange-700 dark:text-orange-300",
+        border: "border-orange-200 dark:border-orange-700",
+        badgeBg: "bg-orange-600",
+        dot: "bg-orange-500",
+    },
+    opioide: {
+        label: "Opioide",
+        bg: "bg-red-100 dark:bg-red-900/40",
+        text: "text-red-700 dark:text-red-300",
+        border: "border-red-200 dark:border-red-700",
+        badgeBg: "bg-red-700",
+        dot: "bg-red-500",
+    },
+    digestivo: {
+        label: "Digestivo",
+        bg: "bg-teal-100 dark:bg-teal-900/40",
+        text: "text-teal-700 dark:text-teal-300",
+        border: "border-teal-200 dark:border-teal-700",
+        badgeBg: "bg-teal-700",
+        dot: "bg-teal-500",
+    },
+    vitamina: {
+        label: "Vitamina",
+        bg: "bg-amber-100 dark:bg-amber-900/40",
+        text: "text-amber-700 dark:text-amber-300",
+        border: "border-amber-200 dark:border-amber-700",
+        badgeBg: "bg-amber-600",
+        dot: "bg-amber-500",
+    },
+    mineral: {
+        label: "Mineral / Electrolito",
+        bg: "bg-slate-100 dark:bg-slate-900/40",
+        text: "text-slate-700 dark:text-slate-300",
+        border: "border-slate-200 dark:border-slate-700",
+        badgeBg: "bg-slate-600",
+        dot: "bg-slate-500",
+    },
+    corticoide: {
+        label: "Corticoide",
+        bg: "bg-yellow-100 dark:bg-yellow-900/40",
+        text: "text-yellow-700 dark:text-yellow-300",
+        border: "border-yellow-200 dark:border-yellow-700",
+        badgeBg: "bg-yellow-600",
+        dot: "bg-yellow-500",
+    },
+    oncologico: {
+        label: "Oncológico",
+        bg: "bg-rose-100 dark:bg-rose-900/40",
+        text: "text-rose-700 dark:text-rose-300",
+        border: "border-rose-200 dark:border-rose-700",
+        badgeBg: "bg-rose-700",
+        dot: "bg-rose-500",
+    },
+    "psicofármaco": {
+        label: "Psicofármaco",
+        bg: "bg-purple-100 dark:bg-purple-900/40",
+        text: "text-purple-700 dark:text-purple-300",
+        border: "border-purple-200 dark:border-purple-700",
+        badgeBg: "bg-purple-700",
+        dot: "bg-purple-500",
+    },
 };
 
-const camposTabla = [
-    { key: "dosis", label: "Dosis" },
-    { key: "dosisDia", label: "Dosis/día" },
-    { key: "dosisMaxima", label: "Dosis máxima" },
-    { key: "frecuencia", label: "Frecuencia" },
-    { key: "reconstitucion", label: "Reconstitución" },
-    { key: "concentracionDilucion", label: "Concentración en dilución" },
-    { key: "solvente", label: "Solvente" },
-    { key: "estabilidad", label: "Estabilidad" },
-    { key: "velocidad", label: "Velocidad infusión" },
-] as const;
+const camposAdministracion = [
+    { key: "dosis" as const, label: "Dosis" },
+    { key: "dosisDia" as const, label: "Dosis/día" },
+    { key: "dosisMaxima" as const, label: "Dosis máxima" },
+    { key: "frecuencia" as const, label: "Frecuencia" },
+    { key: "reconstitucion" as const, label: "Reconstitución" },
+    { key: "concentracionDilucion" as const, label: "Concentración en dilución" },
+    { key: "solvente" as const, label: "Solvente" },
+    { key: "estabilidad" as const, label: "Estabilidad" },
+    { key: "velocidad" as const, label: "Velocidad infusión" },
+    { key: "dilucion" as const, label: "Dilución" },
+];
+
+const camposFarmacologia = [
+    { key: "mecanismoAccion" as const, label: "Mecanismo de acción" },
+    { key: "reaccionesAdversas" as const, label: "Reacciones adversas (RA)" },
+    { key: "interacciones" as const, label: "Interacciones" },
+];
 
 export default function FarmacoCard({ farmaco, queryResaltada = "" }: FarmacoCardProps) {
     const [expandido, setExpandido] = useState(false);
     const [copiado, setCopiado] = useState(false);
-    const cat = categoriaConfig[farmaco.categoria];
+    const cat = categoriaConfig[farmaco.categoria] ?? categoriaConfig["antibacteriano"];
+
+    const filasAdmin = camposAdministracion.filter(
+        ({ key }) => farmaco[key] && farmaco[key] !== "---"
+    );
 
     const copiarInfo = useCallback(async () => {
-        const texto = `FARMACOTECA HRDR — ${farmaco.nombre}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Categoría: ${cat.label}
-Presentación: ${farmaco.presentacion.join(" | ")}
-Dosis: ${farmaco.dosis}
-Dosis/día: ${farmaco.dosisDia}
-Dosis máxima: ${farmaco.dosisMaxima}
-Frecuencia: ${farmaco.frecuencia}
-Reconstitución: ${farmaco.reconstitucion}
-Concentración en dilución: ${farmaco.concentracionDilucion}
-Solvente: ${farmaco.solvente}
-Estabilidad: ${farmaco.estabilidad}
-Velocidad infusión: ${farmaco.velocidad}
-Cuidados especiales: ${farmaco.cuidados}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-⚠ USO EXCLUSIVO PEDIÁTRICO (< 15 años)`;
+        const lineas = [
+            `FARMACOTECA HCSBA — ${farmaco.nombre}`,
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+            `Categoría: ${cat.label}`,
+            `Presentación: ${farmaco.presentacion.join(" | ")}`,
+        ];
+        if (farmaco.dosis) lineas.push(`Dosis: ${farmaco.dosis}`);
+        if (farmaco.dosisDia) lineas.push(`Dosis/día: ${farmaco.dosisDia}`);
+        if (farmaco.dosisMaxima) lineas.push(`Dosis máxima: ${farmaco.dosisMaxima}`);
+        if (farmaco.frecuencia) lineas.push(`Frecuencia: ${farmaco.frecuencia}`);
+        if (farmaco.reconstitucion) lineas.push(`Reconstitución: ${farmaco.reconstitucion}`);
+        if (farmaco.concentracionDilucion) lineas.push(`Concentración en dilución: ${farmaco.concentracionDilucion}`);
+        if (farmaco.solvente) lineas.push(`Solvente: ${farmaco.solvente}`);
+        if (farmaco.estabilidad) lineas.push(`Estabilidad: ${farmaco.estabilidad}`);
+        if (farmaco.velocidad) lineas.push(`Velocidad infusión: ${farmaco.velocidad}`);
+        if (farmaco.dilucion && farmaco.dilucion !== "---") lineas.push(`Dilución: ${farmaco.dilucion}`);
+        if (farmaco.mecanismoAccion) lineas.push(`Mecanismo de acción: ${farmaco.mecanismoAccion}`);
+        if (farmaco.reaccionesAdversas && farmaco.reaccionesAdversas !== "---") lineas.push(`Reacciones adversas: ${farmaco.reaccionesAdversas}`);
+        if (farmaco.interacciones && farmaco.interacciones !== "---") lineas.push(`Interacciones: ${farmaco.interacciones}`);
+        if (farmaco.cuidados && farmaco.cuidados !== "---") lineas.push(`Cuidados especiales: ${farmaco.cuidados}`);
+        lineas.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
         try {
-            await navigator.clipboard.writeText(texto);
+            await navigator.clipboard.writeText(lineas.join("\n"));
             setCopiado(true);
             setTimeout(() => setCopiado(false), 2500);
         } catch {
@@ -151,16 +238,26 @@ Cuidados especiales: ${farmaco.cuidados}
                     </div>
                 </div>
 
-                {/* Dosis rápida visible siempre */}
+                {/* Info rápida visible siempre */}
                 <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-sm">
-                    <span className="text-gray-600 dark:text-gray-400">
-                        <span className="font-semibold text-gray-800 dark:text-gray-200">Dosis:</span>{" "}
-                        {farmaco.dosis}
-                    </span>
-                    <span className="text-gray-600 dark:text-gray-400">
-                        <span className="font-semibold text-gray-800 dark:text-gray-200">Freq:</span>{" "}
-                        {farmaco.frecuencia}
-                    </span>
+                    {farmaco.dosis && (
+                        <span className="text-gray-600 dark:text-gray-400">
+                            <span className="font-semibold text-gray-800 dark:text-gray-200">Dosis:</span>{" "}
+                            {farmaco.dosis}
+                        </span>
+                    )}
+                    {farmaco.frecuencia && (
+                        <span className="text-gray-600 dark:text-gray-400">
+                            <span className="font-semibold text-gray-800 dark:text-gray-200">Freq:</span>{" "}
+                            {farmaco.frecuencia}
+                        </span>
+                    )}
+                    {!farmaco.dosis && farmaco.dilucion && farmaco.dilucion !== "---" && (
+                        <span className="text-gray-600 dark:text-gray-400">
+                            <span className="font-semibold text-gray-800 dark:text-gray-200">Dilución:</span>{" "}
+                            {farmaco.dilucion}
+                        </span>
+                    )}
                 </div>
 
                 {/* Alertas preview */}
@@ -180,36 +277,49 @@ Cuidados especiales: ${farmaco.cuidados}
 
             {/* Panel expandido */}
             <div
-                className={`transition-all duration-300 ease-in-out overflow-hidden ${expandido ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"
+                className={`transition-all duration-300 ease-in-out overflow-hidden ${expandido ? "max-h-[3000px] opacity-100" : "max-h-0 opacity-0"
                     }`}
             >
                 <div className="px-5 pb-5 space-y-5 border-t border-gray-100 dark:border-gray-700 pt-4">
-                    {/* Badge pediátrico */}
-                    <div className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 text-blue-800 dark:text-blue-200 text-sm font-semibold">
-                        <span>👶</span>
-                        <span>Uso Pediátrico — Pacientes &lt; 15 años</span>
-                    </div>
 
-                    {/* Tabla de datos clínicos */}
-                    <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
-                        <table className="w-full text-sm">
-                            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                                {camposTabla.map(({ key, label }, idx) => (
-                                    <tr
-                                        key={key}
-                                        className={idx % 2 === 0 ? "bg-gray-50 dark:bg-gray-700/30" : "bg-white dark:bg-gray-800"}
-                                    >
-                                        <td className="px-4 py-2.5 font-semibold text-gray-600 dark:text-gray-400 w-1/3 align-top">
-                                            {label}
-                                        </td>
-                                        <td className="px-4 py-2.5 text-gray-800 dark:text-gray-200 font-medium">
-                                            {farmaco[key] || "---"}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                    {/* Tabla de datos de administración (sólo si hay campos) */}
+                    {filasAdmin.length > 0 && (
+                        <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+                            <table className="w-full text-sm">
+                                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                                    {filasAdmin.map(({ key, label }, idx) => (
+                                        <tr
+                                            key={key}
+                                            className={idx % 2 === 0 ? "bg-gray-50 dark:bg-gray-700/30" : "bg-white dark:bg-gray-800"}
+                                        >
+                                            <td className="px-4 py-2.5 font-semibold text-gray-600 dark:text-gray-400 w-1/3 align-top">
+                                                {label}
+                                            </td>
+                                            <td className="px-4 py-2.5 text-gray-800 dark:text-gray-200 font-medium">
+                                                {farmaco[key]}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+
+                    {/* Secciones farmacológicas nuevas */}
+                    {camposFarmacologia.map(({ key, label }) => {
+                        const valor = farmaco[key];
+                        if (!valor || valor === "---") return null;
+                        return (
+                            <div key={key} className="rounded-xl bg-gray-50 dark:bg-gray-700/30 border border-gray-200 dark:border-gray-700 p-4">
+                                <p className="font-bold text-gray-700 dark:text-gray-300 text-xs uppercase tracking-wide mb-2">
+                                    {label}
+                                </p>
+                                <p className="text-gray-800 dark:text-gray-200 text-sm leading-relaxed">
+                                    {valor}
+                                </p>
+                            </div>
+                        );
+                    })}
 
                     {/* Cuidados especiales */}
                     {farmaco.cuidados && farmaco.cuidados !== "---" && (
@@ -218,7 +328,7 @@ Cuidados especiales: ${farmaco.cuidados}
                                 <span className="text-lg shrink-0">⚠️</span>
                                 <div>
                                     <p className="font-bold text-amber-800 dark:text-amber-300 text-sm uppercase tracking-wide mb-1">
-                                        Cuidados Especiales
+                                        Cuidados de Enfermería
                                     </p>
                                     <p className="text-amber-900 dark:text-amber-200 text-sm leading-relaxed">
                                         {farmaco.cuidados}

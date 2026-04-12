@@ -315,6 +315,14 @@ const ETIQUETAS_CATEGORIA: Record<CategoriaFarmaco, string> = {
     antibacteriano: "Antibacterianos",
     antifungico: "Antifúngicos",
     antiviral: "Antivirales",
+    aine_analgesico: "AINEs / Analgésicos",
+    opioide: "Opioides",
+    digestivo: "Digestivo",
+    vitamina: "Vitaminas",
+    mineral: "Minerales / Electrolitos",
+    corticoide: "Corticoides",
+    oncologico: "Oncológico",
+    "psicofármaco": "Psicofármacos",
 };
 
 function listarPorCategoria(farmacos: Farmaco[], cat: CategoriaFarmaco): string {
@@ -367,7 +375,7 @@ function buscarPorSolvente(farmacos: Farmaco[], texto: string): string {
     }
 
     const coincidentes = farmacos.filter((f) =>
-        f.solvente.toUpperCase().includes(solvente)
+        (f.solvente ?? "").toUpperCase().includes(solvente)
     );
 
     if (coincidentes.length === 0) {

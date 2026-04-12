@@ -1,7 +1,18 @@
-// Tipos para la Farmacoteca HRDR
-// Uso exclusivo pediátrico — pacientes < 15 años
+// Tipos para la Farmacoteca HCSBA
+// Base de datos farmacológica para internos de enfermería
 
-export type CategoriaFarmaco = "antibacteriano" | "antifungico" | "antiviral";
+export type CategoriaFarmaco =
+  | "antibacteriano"
+  | "antifungico"
+  | "antiviral"
+  | "aine_analgesico"
+  | "opioide"
+  | "digestivo"
+  | "vitamina"
+  | "mineral"
+  | "corticoide"
+  | "oncologico"
+  | "psicofármaco";
 
 export type TipoAlerta =
   | "nefrotoxicidad"
@@ -22,24 +33,38 @@ export type TipoAlerta =
   | "qt_prolongado"
   | "verificar_solucion"
   | "no_aditivos"
-  | "no_refrigerar";
+  | "no_refrigerar"
+  | "fotosensible"
+  | "hepatotoxicidad"
+  | "agranulocitosis"
+  | "depresion_respiratoria"
+  | "naloxona_cerca"
+  | "extrapiramidal";
 
 export interface Farmaco {
   id: string;
   nombre: string;
   presentacion: string[];
-  dosis: string;
-  dosisDia: string;
-  dosisMaxima: string;
-  frecuencia: string;
-  reconstitucion: string;
-  concentracionDilucion: string;
-  solvente: string;
-  estabilidad: string;
-  velocidad: string;
-  cuidados: string;
   categoria: CategoriaFarmaco;
   alertas: TipoAlerta[];
+  cuidados: string;
+
+  // Campos de dosificación (presentes en datos de antimicrobianos)
+  dosis?: string;
+  dosisDia?: string;
+  dosisMaxima?: string;
+  frecuencia?: string;
+  reconstitucion?: string;
+  concentracionDilucion?: string;
+  solvente?: string;
+  estabilidad?: string;
+  velocidad?: string;
+
+  // Nuevos campos farmacológicos del PDF HCSBA
+  mecanismoAccion?: string;
+  reaccionesAdversas?: string;
+  interacciones?: string;
+  dilucion?: string;
 }
 
 export interface MensajeChat {
