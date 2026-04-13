@@ -210,6 +210,7 @@ export default function FarmacoCard({ farmaco, queryResaltada = "" }: FarmacoCar
 
     return (
         <div
+            id={`farmaco-${farmaco.id}`}
             className={`group relative rounded-2xl border-2 ${cat.border} bg-white dark:bg-gray-800 shadow-md hover:shadow-xl dark:shadow-none
                   transition-all duration-300 overflow-hidden`}
         >

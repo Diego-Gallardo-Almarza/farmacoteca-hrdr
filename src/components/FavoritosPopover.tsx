@@ -1,10 +1,26 @@
-// FavoritosPopover.tsx — Botón con menú flotante para ver fármacos guardados
+// FavoritosPopover.tsx — Botón con menú flotante de favoritos con botones expansibles
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
 import { useFavoritos } from "@/hooks/useFavoritos";
-import { Farmaco } from "@/types/farmaco";
+import { Farmaco, CategoriaFarmaco } from "@/types/farmaco";
 import farmacos from "@/data/farmacos.json";
+import BotonFavoritoExpandible from "./ui/BotonFavoritoExpandible";
+
+// Color del degradado según categoría del fármaco
+const COLOR_CATEGORIA: Record<CategoriaFarmaco, string> = {
+    antibacteriano: "#3b82f6",
+    antifungico: "#10b981",
+    antiviral: "#8b5cf6",
+    aine_analgesico: "#f59e0b",
+    opioide: "#ef4444",
+    digestivo: "#14b8a6",
+    vitamina: "#f59e0b",
+    mineral: "#6366f1",
+    corticoide: "#f59e0b",
+    oncologico: "#ef4444",
+    "psicofármaco": "#8b5cf6",
+};
 
 export default function FavoritosPopover() {
     const [abierto, setAbierto] = useState(false);
@@ -37,8 +53,28 @@ export default function FavoritosPopover() {
         return () => window.removeEventListener("keydown", fn);
     }, [abierto]);
 
+    const irAFarmaco = (id: string) => {
+        setAbierto(false);
+        // Pequeño delay para que el popover cierre antes del scroll
+        setTimeout(() => {
+            const el = document.getElementById(`farmaco-${id}`);
+            if (el) {
+                el.scrollIntoView({ behavior: "smooth", block: "center" });
+                // Flash visual para identificar la tarjeta
+                el.style.transition = "outline 0ms";
+                el.style.outline = "2px solid #facc15";
+                el.style.outlineOffset = "3px";
+                setTimeout(() => {
+                    el.style.outline = "";
+                    el.style.outlineOffset = "";
+                }, 1400);
+            }
+        }, 80);
+    };
+
     return (
         <div className="relative" ref={ref}>
+            {/* Botón disparador */}
             <button
                 onClick={() => setAbierto((v) => !v)}
                 aria-label="Ver fármacos favoritos"
@@ -71,50 +107,50 @@ export default function FavoritosPopover() {
             {/* Popover */}
             {abierto && (
                 <div
-                    className="absolute right-0 top-full mt-2 w-72 z-50
-                               bg-white dark:bg-gray-800 rounded-2xl shadow-2xl
-                               border border-gray-200 dark:border-gray-700
+                    className="absolute right-0 top-full mt-2 z-50
+                               bg-gray-950 rounded-2xl shadow-2xl
+                               border border-zinc-800
                                overflow-hidden animate-fade-in-up"
+                    style={{ minWidth: "200px", maxWidth: "calc(100vw - 2rem)" }}
                 >
-                    <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
-                        <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100">
+                    {/* Header */}
+                    <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
+                        <h3 className="text-sm font-bold text-zinc-100">
                             Fármacos guardados
                         </h3>
                         {farmacosFavoritos.length > 0 && (
-                            <span className="text-xs text-gray-400 dark:text-gray-500">
+                            <span className="text-xs text-zinc-500">
                                 {farmacosFavoritos.length} guardado{farmacosFavoritos.length !== 1 ? "s" : ""}
                             </span>
                         )}
                     </div>
 
                     {farmacosFavoritos.length === 0 ? (
+                        /* Estado vacío */
                         <div className="px-4 py-6 text-center">
-                            <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center mx-auto mb-2">
-                                <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                            <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center mx-auto mb-2">
+                                <svg className="w-5 h-5 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                                 </svg>
                             </div>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                                No hay fármacos guardados
-                            </p>
-                            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                            <p className="text-sm text-zinc-400">No hay fármacos guardados</p>
+                            <p className="text-xs text-zinc-600 mt-1">
                                 Toca la estrella en una tarjeta para guardar
                             </p>
                         </div>
                     ) : (
-                        <ul className="divide-y divide-gray-100 dark:divide-gray-700 max-h-64 overflow-y-auto">
+                        /* Lista de botones expandibles */
+                        <ul
+                            className="px-4 py-4 flex flex-col gap-3 max-h-72 overflow-y-auto"
+                            style={{ scrollbarWidth: "none" }}
+                        >
                             {farmacosFavoritos.map((f) => (
-                                <li key={f.id} className="px-4 py-2.5 flex items-center gap-3">
-                                    <div className="w-2 h-2 rounded-full bg-yellow-400 shrink-0" />
-                                    <div className="min-w-0">
-                                        <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">
-                                            {f.nombre}
-                                        </p>
-                                        <p className="text-xs text-gray-400 dark:text-gray-500 capitalize truncate">
-                                            {f.categoria.replace("_", " ")}
-                                        </p>
-                                    </div>
-                                </li>
+                                <BotonFavoritoExpandible
+                                    key={f.id}
+                                    nombre={f.nombre}
+                                    color={COLOR_CATEGORIA[f.categoria] ?? "#6366f1"}
+                                    onClick={() => irAFarmaco(f.id)}
+                                />
                             ))}
                         </ul>
                     )}
