@@ -70,8 +70,8 @@ export default function HomePage() {
           <span className="text-blue-800 dark:text-blue-300">Yiyo</span>
         </h2>
         <p className="text-gray-500 dark:text-gray-400 text-base max-w-xl mx-auto">
-          Consulta rápida de antimicrobianos pediátricos para estudiantes de
-          enfermería del Hospital Dr. Roberto del Río.
+          Consulta rápida de fármacos para estudiantes de
+          enfermería del HCSBA.
         </p>
 
         {/* Stats rápidas + calculadora */}
