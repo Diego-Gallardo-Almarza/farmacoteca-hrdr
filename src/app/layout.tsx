@@ -4,6 +4,7 @@ import "./globals.css";
 import DarkModeToggle from "@/components/DarkModeToggle";
 import AIConsulta from "@/components/AIConsulta";
 import FavoritosPopover from "@/components/FavoritosPopover";
+import FavoritosDrawer from "@/components/FavoritosDrawer";
 import Link from "next/link";
 import { Toaster } from "sonner";
 
@@ -93,7 +94,13 @@ export default function RootLayout({
                 </svg>
                 Lista completa
               </Link>
-              <FavoritosPopover />
+              {/* Favoritos: Drawer en móvil, Popover en desktop */}
+              <div className="md:hidden">
+                <FavoritosDrawer />
+              </div>
+              <div className="hidden md:block">
+                <FavoritosPopover />
+              </div>
               <DarkModeToggle />
             </nav>
           </div>
